@@ -26,7 +26,7 @@ func commandMap(config *Context) error {
 
 func commandMapBack(config *Context) error {
 	args := pokeapi.Args{}
-	args.Url = config.Next
+	args.Url = config.Prev
 	args.Cache = config.Cache
 	response := pokeapi.GetLocation(args)
 
