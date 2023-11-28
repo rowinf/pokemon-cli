@@ -5,50 +5,62 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"pokedexcli/pokeapi"
+	pokeapi "pokedexcli/internal"
 	"strings"
+	"time"
 )
 
-func commandMap(config map[string]string) error {
-	args := map[string]string{"url": config["next"]}
+func commandMap(config *Context) error {
+	args := pokeapi.Args{}
+	args.Url = config.Next
+	args.Cache = config.Cache
 	response := pokeapi.GetLocation(args)
 	for _, place := range response.Results {
 		fmt.Println(place.Name)
 	}
-	config["prev"] = response.Previous
-	config["next"] = response.Next
+	config.Prev = response.Previous
+	config.Next = response.Next
 
 	return nil
 }
 
-func commandMapBack(config map[string]string) error {
-	args := map[string]string{"url": config["prev"]}
+func commandMapBack(config *Context) error {
+	args := pokeapi.Args{}
+	args.Url = config.Next
+	args.Cache = config.Cache
 	response := pokeapi.GetLocation(args)
+
 	for _, place := range response.Results {
 		fmt.Println(place.Name)
 	}
-	config["prev"] = response.Previous
-	config["next"] = response.Next
+	config.Prev = response.Previous
+	config.Next = response.Next
 	return nil
 }
 
-func commandHelp(_ map[string]string) error {
+func commandHelp(_ *Context) error {
 	fmt.Println("Available commands:")
 	fmt.Println("- help: Display this help message")
 	fmt.Println("- exit: close the program")
 	return nil
 }
 
-func commandExit(_ map[string]string) error {
+func commandExit(_ *Context) error {
 	fmt.Println("exiting the program")
 	os.Exit(0)
 	return nil
 }
 
+type Context struct {
+	Prev  string
+	Next  string
+	Cache *pokeapi.Cache
+}
+
 type command struct {
 	name        string
 	description string
-	callback    func(config map[string]string) error
+	callback    func(config *Context) error
 }
 
 func main() {
@@ -76,7 +88,9 @@ func main() {
 		},
 	}
 
-	config := make(map[string]string)
+	config := Context{}
+	cache := pokeapi.NewCache(time.Minute * 5)
+	config.Cache = cache
 	for {
 		fmt.Print("Pokedex > ")
 		input, err := reader.ReadString('\n')
@@ -85,7 +99,7 @@ func main() {
 			os.Exit(1)
 		}
 		input = strings.TrimSpace(input)
-		cmderr := commands[input].callback(config)
+		cmderr := commands[input].callback(&config)
 		if cmderr != nil {
 			log.Fatalf("command error %s", cmderr)
 		}

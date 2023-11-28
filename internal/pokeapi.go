@@ -1,4 +1,4 @@
-package pokeapi
+package internal
 
 import (
 	"encoding/json"
@@ -12,17 +12,21 @@ type Location struct {
 	Name string `json:"name"`
 	Url  string `json:"url"`
 }
-type ApiResponse struct {
+type GetLocationResponse struct {
 	Count    int    `json:"count"`
 	Next     string `json:"next"`
 	Previous string `json:"previous"`
 	Results  []Location
 }
+type Args struct {
+	Cache *Cache
+	Url   string
+}
 
-func GetLocation(args map[string]string) ApiResponse {
+func GetLocation(args Args) GetLocationResponse {
 	url := "https://pokeapi.co/api/v2/location/"
-	if argUrl, ok := args["url"]; ok && argUrl != "" {
-		url = argUrl
+	if args.Url != "" {
+		url = args.Url
 	}
 	res, err := http.Get(url)
 	if err != nil {
@@ -38,7 +42,7 @@ func GetLocation(args map[string]string) ApiResponse {
 		log.Fatalf("Response failed with status %d", res.StatusCode)
 	}
 	// fmt.Printf("%s", body)
-	response := ApiResponse{}
+	response := GetLocationResponse{}
 	unerr := json.Unmarshal(body, &response)
 	if unerr != nil {
 		log.Fatal(unerr)
