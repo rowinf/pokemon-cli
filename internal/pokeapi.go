@@ -2,7 +2,6 @@ package internal
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -28,21 +27,18 @@ func GetLocation(args Args) GetLocationResponse {
 	var url string
 	response := GetLocationResponse{}
 	if url = args.Url; url == "" {
-		url = "https://pokeapi.co/api/v2/location/"
+		url = "https://pokeapi.co/api/v2/location/?offset=0&limit=20"
 	}
 	if cachedBody, ok := args.Cache.Get(url); ok {
-		fmt.Println("cache hit: ", url)
 		unerr := json.Unmarshal(cachedBody, &response)
 		if unerr != nil {
 			panic(unerr)
 		}
 	} else {
-		fmt.Println("cache miss: ", url)
 		res, err := http.Get(url)
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(1)
-
 		}
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -56,6 +52,7 @@ func GetLocation(args Args) GetLocationResponse {
 		if unerr != nil {
 			log.Fatal(unerr)
 		}
+		args.Cache.Add(url, body)
 	}
 	return response
 }
