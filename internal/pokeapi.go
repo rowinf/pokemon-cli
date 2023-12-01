@@ -13,24 +13,21 @@ type Location struct {
 	Name string `json:"name"`
 	Url  string `json:"url"`
 }
+
 type GetLocationResponse struct {
 	Count    int    `json:"count"`
 	Next     string `json:"next"`
 	Previous string `json:"previous"`
 	Results  []Location
 }
-type Args struct {
-	Cache *Cache
-	Url   string
-}
 
-func GetLocation(args Args) GetLocationResponse {
+func GetLocation(context *Context) GetLocationResponse {
 	var url string
 	response := GetLocationResponse{}
-	if url = args.Url; url == "" {
+	if url = context.MapUrl; url == "" {
 		url = "https://pokeapi.co/api/v2/location/?offset=0&limit=20"
 	}
-	if cachedBody, ok := args.Cache.Get(url); ok {
+	if cachedBody, ok := context.Cache.Get(url); ok {
 		unerr := json.Unmarshal(cachedBody, &response)
 		if unerr != nil {
 			panic(unerr)
@@ -41,7 +38,41 @@ func GetLocation(args Args) GetLocationResponse {
 		if unerr != nil {
 			log.Fatal(unerr)
 		}
-		args.Cache.Add(url, body)
+		context.Prev = response.Previous
+		context.Next = response.Next
+		context.Cache.Add(url, body)
+	}
+	return response
+}
+
+type LocationAreas struct {
+	Name string `json:name`
+	Url  string `json:url`
+}
+
+type GetExploreLocationBody struct {
+	Areas []LocationAreas `json:"areas"`
+}
+
+func GetExploreLocation(context *Context) GetExploreLocationBody {
+	response := GetExploreLocationBody{}
+	if context.CommandArgs[0] == "" {
+		log.Fatal("location is required")
+	}
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location/%s", context.CommandArgs[1])
+
+	if cachedBody, ok := context.Cache.Get(url); ok {
+		unerr := json.Unmarshal(cachedBody, &response)
+		if unerr != nil {
+			panic(unerr)
+		}
+	} else {
+		body := sendRequest(url)
+		unerr := json.Unmarshal(body, &response)
+		if unerr != nil {
+			log.Fatal(unerr)
+		}
+		context.Cache.Add(url, body)
 	}
 	return response
 }
@@ -55,18 +86,13 @@ type PokemonEncounter struct {
 	Pokemon Pokemon `json:"pokemon"`
 }
 
-type GetExploreLocationBody struct {
+type GetLocationAreaBody struct {
 	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
 }
 
-func GetExploreLocation(context *Context) GetExploreLocationBody {
-	response := GetExploreLocationBody{}
-	if context.CommandArgs[0] == "" {
-		log.Fatal("location is required")
-	}
-	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s", context.CommandArgs[1])
-	fmt.Println(url)
-
+func GetLocationArea(context *Context) GetLocationAreaBody {
+	response := GetLocationAreaBody{}
+	url := context.LocationAreaUrl
 	if cachedBody, ok := context.Cache.Get(url); ok {
 		unerr := json.Unmarshal(cachedBody, &response)
 		if unerr != nil {

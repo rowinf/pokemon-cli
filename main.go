@@ -12,39 +12,42 @@ import (
 
 func commandExplore(context *internal.Context) error {
 	response := internal.GetExploreLocation(context)
-	for _, results := range response.PokemonEncounters {
-		fmt.Println(results.Pokemon.Name)
+	if context.CommandArgs[0] == "" {
+		log.Fatal("location is required")
+		return nil
+	}
+	if len(response.Areas) == 0 {
+		fmt.Println("Nothing to explore in", context.CommandArgs[1])
+		return nil
+	}
+	area := response.Areas[0]
+	context.LocationAreaUrl = area.Url
+	areaBody := internal.GetLocationArea(context)
+	fmt.Println("Found Pokemon:")
+	for _, results := range areaBody.PokemonEncounters {
+		fmt.Println("- ", results.Pokemon.Name)
 	}
 	return nil
 }
 
 func commandMap(config *internal.Context) error {
-	args := internal.Args{}
-	args.Url = config.Next
-	args.Cache = config.Cache
-	response := internal.GetLocation(args)
+	config.MapUrl = config.Next
+	response := internal.GetLocation(config)
 	for _, place := range response.Results {
 		fmt.Println(place.Name)
 	}
-	config.MapUrl = args.Url
-	config.Prev = response.Previous
-	config.Next = response.Next
 
 	return nil
 }
 
 func commandMapBack(config *internal.Context) error {
-	args := internal.Args{}
-	args.Url = config.Prev
-	args.Cache = config.Cache
-	response := internal.GetLocation(args)
+	config.MapUrl = config.Prev
+	response := internal.GetLocation(config)
 
 	for _, place := range response.Results {
 		fmt.Println(place.Name)
 	}
-	config.MapUrl = args.Url
-	config.Prev = response.Previous
-	config.Next = response.Next
+
 	return nil
 }
 
