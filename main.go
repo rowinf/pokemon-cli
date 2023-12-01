@@ -5,62 +5,66 @@ import (
 	"fmt"
 	"log"
 	"os"
-	pokeapi "pokedexcli/internal"
+	"pokedexcli/internal"
 	"strings"
 	"time"
 )
 
-func commandMap(config *Context) error {
-	args := pokeapi.Args{}
+func commandExplore(context *internal.Context) error {
+	response := internal.GetExploreLocation(context)
+	for _, results := range response.PokemonEncounters {
+		fmt.Println(results.Pokemon.Name)
+	}
+	return nil
+}
+
+func commandMap(config *internal.Context) error {
+	args := internal.Args{}
 	args.Url = config.Next
 	args.Cache = config.Cache
-	response := pokeapi.GetLocation(args)
+	response := internal.GetLocation(args)
 	for _, place := range response.Results {
 		fmt.Println(place.Name)
 	}
+	config.MapUrl = args.Url
 	config.Prev = response.Previous
 	config.Next = response.Next
 
 	return nil
 }
 
-func commandMapBack(config *Context) error {
-	args := pokeapi.Args{}
+func commandMapBack(config *internal.Context) error {
+	args := internal.Args{}
 	args.Url = config.Prev
 	args.Cache = config.Cache
-	response := pokeapi.GetLocation(args)
+	response := internal.GetLocation(args)
 
 	for _, place := range response.Results {
 		fmt.Println(place.Name)
 	}
+	config.MapUrl = args.Url
 	config.Prev = response.Previous
 	config.Next = response.Next
 	return nil
 }
 
-func commandHelp(_ *Context) error {
+func commandHelp(_ *internal.Context) error {
 	fmt.Println("Available commands:")
 	fmt.Println("- help: Display this help message")
 	fmt.Println("- exit: close the program")
 	return nil
 }
 
-func commandExit(_ *Context) error {
+func commandExit(_ *internal.Context) error {
 	fmt.Println("exiting the program")
 	os.Exit(0)
 	return nil
 }
 
-type Context struct {
-	Prev  string
-	Next  string
-	Cache *pokeapi.Cache
-}
-
 type command struct {
 	name        string
 	description string
-	callback    func(config *Context) error
+	callback    func(config *internal.Context) error
 }
 
 func main() {
@@ -86,11 +90,16 @@ func main() {
 			description: "go back in the map",
 			callback:    commandMapBack,
 		},
+		"explore": {
+			name:        "explore",
+			description: "explore an area from the map",
+			callback:    commandExplore,
+		},
 	}
 
-	config := Context{}
-	cache := pokeapi.NewCache(time.Minute * 5)
-	config.Cache = cache
+	config := internal.Context{
+		Cache: internal.NewCache(time.Minute * 5),
+	}
 	for {
 		fmt.Print("Pokedex > ")
 		input, err := reader.ReadString('\n')
@@ -99,7 +108,8 @@ func main() {
 			os.Exit(1)
 		}
 		input = strings.TrimSpace(input)
-		cmderr := commands[input].callback(&config)
+		config.CommandArgs = strings.Split(input, " ")
+		cmderr := commands[config.CommandArgs[0]].callback(&config)
 		if cmderr != nil {
 			log.Fatalf("command error %s", cmderr)
 		}
