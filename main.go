@@ -11,11 +11,30 @@ import (
 	"time"
 )
 
+func commandInspect(context *internal.Context) error {
+	if pokemon, ok := context.Pokedex[context.CommandArgs[1]]; ok {
+		fmt.Println("Name:", pokemon.Name)
+		fmt.Println("Height: ", pokemon.Height)
+		fmt.Println("Weight: ", pokemon.Weight)
+		fmt.Println("Stats:")
+		for _, stats := range pokemon.Stats {
+			fmt.Printf("  -%s: %d\n", stats.Stat.Name, stats.BaseStat)
+		}
+		fmt.Println("Types:")
+		for _, stats := range pokemon.Types {
+			fmt.Printf("  -%s\n", stats.Type.Name)
+		}
+	} else {
+		fmt.Println("You haven't caught that pokemon")
+	}
+	return nil
+}
+
 func commandCatch(context *internal.Context) error {
 	areaBody := internal.GetLocationArea(context)
 	var caught bool
 	source := rand.NewSource(time.Now().UnixNano())
-	probability := 15
+	probability := 25
 
 	for _, result := range areaBody.PokemonEncounters {
 		if result.Pokemon.Name == context.CommandArgs[1] {
@@ -139,6 +158,11 @@ func main() {
 			name:        "catch",
 			description: "catch a pokemon",
 			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "inspect a pokemon you caught",
+			callback:    commandInspect,
 		},
 	}
 

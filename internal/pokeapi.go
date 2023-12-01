@@ -106,12 +106,31 @@ func GetLocationArea(context *Context) GetLocationAreaBody {
 	return response
 }
 
-type Pokemon struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+type (
+	Stat struct {
+		Name string `json:"name"`
+	}
+	Stats struct {
+		BaseStat int  `json:"base_stat"`
+		Stat     Stat `json:"stat"`
+	}
+	Type struct {
+		Name string `json:"name"`
+	}
+	Types struct {
+		Type Type `json:"type"`
+	}
+	Pokemon struct {
+		Id   int    `json:"id"`
+		Name string `json:"name"`
 
-	BaseExperience int `json:"base_experience"`
-}
+		Height         int     `json:"height"`
+		Weight         int     `json:"weight"`
+		BaseExperience int     `json:"base_experience"`
+		Stats          []Stats `json:"stats"`
+		Types          []Types `json:"types"`
+	}
+)
 
 func GetPokemon(context *Context) Pokemon {
 	response := Pokemon{}
