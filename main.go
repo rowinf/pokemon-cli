@@ -11,6 +11,14 @@ import (
 	"time"
 )
 
+func commandPokedex(context *internal.Context) error {
+	fmt.Println("Your Pokedex: ")
+	for key := range context.Pokedex {
+		fmt.Println(" -", key)
+	}
+	return nil
+}
+
 func commandInspect(context *internal.Context) error {
 	if pokemon, ok := context.Pokedex[context.CommandArgs[1]]; ok {
 		fmt.Println("Name:", pokemon.Name)
@@ -163,6 +171,11 @@ func main() {
 			name:        "inspect",
 			description: "inspect a pokemon you caught",
 			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "list the pokemon you've caught",
+			callback:    commandPokedex,
 		},
 	}
 
