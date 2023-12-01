@@ -56,9 +56,6 @@ type GetExploreLocationBody struct {
 
 func GetExploreLocation(context *Context) GetExploreLocationBody {
 	response := GetExploreLocationBody{}
-	if context.CommandArgs[0] == "" {
-		log.Fatal("location is required")
-	}
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/location/%s", context.CommandArgs[1])
 
 	if cachedBody, ok := context.Cache.Get(url); ok {
@@ -77,13 +74,13 @@ func GetExploreLocation(context *Context) GetExploreLocationBody {
 	return response
 }
 
-type Pokemon struct {
+type FoundPokemon struct {
 	Name string `json:"name"`
-	URL  string `json:"url"`
+	Url  string `json:"url"`
 }
 
 type PokemonEncounter struct {
-	Pokemon Pokemon `json:"pokemon"`
+	Pokemon FoundPokemon `json:"pokemon"`
 }
 
 type GetLocationAreaBody struct {
@@ -93,6 +90,33 @@ type GetLocationAreaBody struct {
 func GetLocationArea(context *Context) GetLocationAreaBody {
 	response := GetLocationAreaBody{}
 	url := context.LocationAreaUrl
+	if cachedBody, ok := context.Cache.Get(url); ok {
+		unerr := json.Unmarshal(cachedBody, &response)
+		if unerr != nil {
+			panic(unerr)
+		}
+	} else {
+		body := sendRequest(url)
+		unerr := json.Unmarshal(body, &response)
+		if unerr != nil {
+			log.Fatal(unerr)
+		}
+		context.Cache.Add(url, body)
+	}
+	return response
+}
+
+type Pokemon struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+
+	BaseExperience int `json:"base_experience"`
+}
+
+func GetPokemon(context *Context) Pokemon {
+	response := Pokemon{}
+	url := context.CatchPokemonUrl
+
 	if cachedBody, ok := context.Cache.Get(url); ok {
 		unerr := json.Unmarshal(cachedBody, &response)
 		if unerr != nil {
